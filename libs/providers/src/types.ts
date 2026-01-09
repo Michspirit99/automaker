@@ -42,7 +42,7 @@ export interface InstallationStatus {
   method?: 'sdk' | 'cli' | 'api' | 'local' | 'path' | 'wsl' | 'npm' | 'brew';
   version?: string;
   path?: string;
-  hasApiKey: boolean;
+  hasApiKey?: boolean;
   authenticated: boolean;
 }
 
