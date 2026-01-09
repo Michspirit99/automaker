@@ -63,6 +63,11 @@ import { createPipelineRoutes } from './routes/pipeline/index.js';
 import { pipelineService } from './services/pipeline-service.js';
 import { createIdeationRoutes } from './routes/ideation/index.js';
 import { IdeationService } from './services/ideation-service.js';
+import { providerRegistry } from '@automaker/providers';
+import { ClaudeProviderBridge } from './providers/claude-provider-bridge.js';
+import { OpenAIProvider } from './providers/openai-provider.js';
+import { OllamaProvider } from './providers/ollama-provider.js';
+import { createProvidersRoutes } from './routes/providers/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -90,6 +95,24 @@ if (!hasAnthropicKey) {
 } else {
   logger.info('✓ ANTHROPIC_API_KEY detected (API key auth)');
 }
+
+// Register all AI providers
+providerRegistry.register(new ClaudeProviderBridge());
+providerRegistry.register(new OpenAIProvider());
+providerRegistry.register(new OllamaProvider());
+
+// Set default provider (Claude for now)
+providerRegistry.setDefault('claude');
+
+// Log available providers
+(async () => {
+  const availableProviders = await providerRegistry.detectAvailable();
+  if (availableProviders.length > 0) {
+    logger.info('✓ Available AI providers:', availableProviders.map((p) => p.name).join(', '));
+  } else {
+    logger.warn('⚠️  No AI providers are fully configured and available');
+  }
+})();
 
 // Initialize security
 initAllowedPaths();
@@ -222,6 +245,7 @@ app.use('/api/backlog-plan', createBacklogPlanRoutes(events, settingsService));
 app.use('/api/mcp', createMCPRoutes(mcpTestService));
 app.use('/api/pipeline', createPipelineRoutes(pipelineService));
 app.use('/api/ideation', createIdeationRoutes(events, ideationService, featureLoader));
+app.use('/api/providers', createProvidersRoutes());
 
 // Create HTTP server
 const server = createServer(app);

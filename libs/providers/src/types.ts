@@ -8,11 +8,11 @@ export interface ModelDefinition {
   modelString: string;
   provider: string;
   description: string;
-  contextWindow: number;
-  maxOutputTokens: number;
-  supportsVision: boolean;
-  supportsTools: boolean;
-  tier: 'basic' | 'standard' | 'premium';
+  contextWindow?: number;
+  maxOutputTokens?: number;
+  supportsVision?: boolean;
+  supportsTools?: boolean;
+  tier?: 'basic' | 'standard' | 'premium';
   default?: boolean;
 }
 
@@ -39,7 +39,7 @@ export interface ExecuteResult {
 
 export interface InstallationStatus {
   installed: boolean;
-  method?: 'sdk' | 'cli' | 'api' | 'local' | 'path';
+  method?: 'sdk' | 'cli' | 'api' | 'local' | 'path' | 'wsl' | 'npm' | 'brew';
   version?: string;
   path?: string;
   hasApiKey: boolean;
