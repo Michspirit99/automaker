@@ -53,6 +53,7 @@ automaker/
     ├── platform/     # Path management, security, process spawning
     ├── model-resolver/    # Claude model alias resolution
     ├── dependency-resolver/  # Feature dependency ordering
+    ├── providers/    # AI provider abstraction layer
     └── git-utils/    # Git operations & worktree management
 ```
 
@@ -63,7 +64,7 @@ Packages can only depend on packages above them:
 ```
 @automaker/types (no dependencies)
     ↓
-@automaker/utils, @automaker/prompts, @automaker/platform, @automaker/model-resolver, @automaker/dependency-resolver
+@automaker/utils, @automaker/prompts, @automaker/platform, @automaker/model-resolver, @automaker/dependency-resolver, @automaker/providers
     ↓
 @automaker/git-utils
     ↓
@@ -73,17 +74,29 @@ Packages can only depend on packages above them:
 ### Key Technologies
 
 - **Frontend**: React 19, Vite 7, Electron 39, TanStack Router, Zustand 5, Tailwind CSS 4
-- **Backend**: Express 5, WebSocket (ws), Claude Agent SDK, node-pty
+- **Backend**: Express 5, WebSocket (ws), Claude Agent SDK, OpenAI SDK, node-pty
 - **Testing**: Playwright (E2E), Vitest (unit)
 
 ### Server Architecture
 
 The server (`apps/server/src/`) follows a modular pattern:
 
-- `routes/` - Express route handlers organized by feature (agent, features, auto-mode, worktree, etc.)
+- `routes/` - Express route handlers organized by feature (agent, features, auto-mode, worktree, providers, etc.)
 - `services/` - Business logic (AgentService, AutoModeService, FeatureLoader, TerminalService)
-- `providers/` - AI provider abstraction (currently Claude via Claude Agent SDK)
+- `providers/` - AI provider implementations (ClaudeProvider, OpenAIProvider, OllamaProvider)
 - `lib/` - Utilities (events, auth, worktree metadata)
+
+### AI Provider Architecture
+
+Automaker supports multiple AI providers through a provider abstraction layer (`@automaker/providers`):
+
+- **Provider Registry** - Centralized registration and discovery of AI providers
+- **Base Interface** - Common `AIProvider` interface all providers implement
+- **Bridge Pattern** - Adapts existing server providers to the new interface
+- **Supported Providers**:
+  - Claude (via Claude Agent SDK) - Default provider
+  - OpenAI (GPT-4 Turbo, GPT-4, GPT-3.5 Turbo)
+  - Ollama (Local models: Llama 2, Code Llama, Mistral)
 
 ### Frontend Architecture
 

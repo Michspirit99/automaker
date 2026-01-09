@@ -95,7 +95,7 @@ export function getThinkingTokenBudget(level: ThinkingLevel | undefined): number
 }
 
 /** ModelProvider - AI model provider for credentials and API key management */
-export type ModelProvider = 'claude' | 'cursor';
+export type ModelProvider = 'claude' | 'cursor' | 'openai' | 'ollama';
 
 /**
  * PhaseModelEntry - Configuration for a single phase model
@@ -482,6 +482,35 @@ export interface GlobalSettings {
   // MCP Server Configuration
   /** List of configured MCP servers for agent use */
   mcpServers: MCPServerConfig[];
+
+  // Provider Configuration
+  /** Default AI provider to use (claude, openai, ollama) */
+  defaultProvider?: 'claude' | 'openai' | 'ollama' | string;
+  /** Provider-specific settings */
+  providerSettings?: {
+    claude?: {
+      /** Anthropic API key (also read from ANTHROPIC_API_KEY env) */
+      apiKey?: string;
+      /** Path to Claude CLI if installed */
+      cliPath?: string;
+      /** Default model for Claude */
+      defaultModel?: string;
+    };
+    openai?: {
+      /** OpenAI API key (also read from OPENAI_API_KEY env) */
+      apiKey?: string;
+      /** OpenAI organization ID (optional) */
+      organization?: string;
+      /** Default model for OpenAI */
+      defaultModel?: string;
+    };
+    ollama?: {
+      /** Base URL for Ollama API (default: http://localhost:11434) */
+      baseUrl?: string;
+      /** Default model for Ollama */
+      defaultModel?: string;
+    };
+  };
 
   // Prompt Customization
   /** Custom prompts for Auto Mode, Agent Runner, Backlog Planning, and Enhancements */
