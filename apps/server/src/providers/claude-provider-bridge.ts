@@ -72,7 +72,15 @@ export class ClaudeProviderBridge implements AIProvider {
   }
 
   async detectInstallation(): Promise<InstallationStatus> {
-    return this.serverProvider.detectInstallation();
+    const serverStatus = await this.serverProvider.detectInstallation();
+    return {
+      installed: serverStatus.installed,
+      method: serverStatus.method as any,
+      version: serverStatus.version,
+      path: serverStatus.path,
+      hasApiKey: serverStatus.hasApiKey,
+      authenticated: serverStatus.authenticated || false,
+    };
   }
 
   async checkAuthentication(): Promise<AuthenticationStatus> {
@@ -84,7 +92,20 @@ export class ClaudeProviderBridge implements AIProvider {
   }
 
   getAvailableModels(): ModelDefinition[] {
-    return this.serverProvider.getAvailableModels();
+    const serverModels = this.serverProvider.getAvailableModels();
+    return serverModels.map((model) => ({
+      id: model.id,
+      name: model.name,
+      modelString: model.modelString,
+      provider: model.provider,
+      description: model.description,
+      contextWindow: model.contextWindow,
+      maxOutputTokens: model.maxOutputTokens,
+      supportsVision: model.supportsVision,
+      supportsTools: model.supportsTools,
+      tier: model.tier,
+      default: model.default,
+    }));
   }
 
   supportsFeature(feature: string): boolean {
