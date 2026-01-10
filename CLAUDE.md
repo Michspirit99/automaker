@@ -97,6 +97,9 @@ Automaker supports multiple AI providers through a provider abstraction layer (`
   - Claude (via Claude Agent SDK) - Default provider
   - OpenAI (GPT-4 Turbo, GPT-4, GPT-3.5 Turbo)
   - Ollama (Local models: Llama 2, Code Llama, Mistral)
+  - Google Gemini (Gemini Pro, Gemini Pro Vision, Gemini Ultra)
+  - GitHub Copilot (GPT-4, GPT-3.5 via Copilot subscription)
+  - OpenAI Codex (code-davinci-002, code-cushman-001)
 
 ### Frontend Architecture
 

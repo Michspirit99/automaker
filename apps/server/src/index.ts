@@ -67,6 +67,9 @@ import { providerRegistry } from '@automaker/providers';
 import { ClaudeProviderBridge } from './providers/claude-provider-bridge.js';
 import { OpenAIProvider } from './providers/openai-provider.js';
 import { OllamaProvider } from './providers/ollama-provider.js';
+import { GeminiProvider } from './providers/gemini-provider.js';
+import { CopilotProvider } from './providers/copilot-provider.js';
+import { CodexProvider } from './providers/codex-provider.js';
 import { createProvidersRoutes } from './routes/providers/index.js';
 
 // Load environment variables
@@ -100,6 +103,9 @@ if (!hasAnthropicKey) {
 providerRegistry.register(new ClaudeProviderBridge());
 providerRegistry.register(new OpenAIProvider());
 providerRegistry.register(new OllamaProvider());
+providerRegistry.register(new GeminiProvider());
+providerRegistry.register(new CopilotProvider());
+providerRegistry.register(new CodexProvider());
 
 // Set default provider (Claude for now)
 providerRegistry.setDefault('claude');

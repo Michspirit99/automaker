@@ -361,9 +361,26 @@ Automaker supports multiple AI providers. Configure your preferred provider thro
 - `OLLAMA_BASE_URL` - Ollama API endpoint (default: http://localhost:11434)
 - Run models locally without API keys (Llama 2, Code Llama, Mistral, etc.)
 
+**Google Gemini**
+
+- `GEMINI_API_KEY` or `GOOGLE_API_KEY` - Your Google API key
+- Requires Gemini CLI installed
+- Supports Gemini Pro, Gemini Pro Vision, and Gemini Ultra models
+
+**GitHub Copilot**
+
+- Requires GitHub Copilot CLI installed and authenticated via `gh auth login`
+- Uses your GitHub Copilot subscription
+
+**OpenAI Codex**
+
+- `OPENAI_API_KEY` - Your OpenAI API key
+- Requires Codex CLI installed
+- Supports code-davinci-002 and code-cushman-001 models
+
 **Default Provider**
 
-- `DEFAULT_AI_PROVIDER` - Set default provider: `claude`, `openai`, or `ollama` (default: claude)
+- `DEFAULT_AI_PROVIDER` - Set default provider: `claude`, `openai`, `ollama`, `gemini`, `copilot`, or `codex` (default: claude)
 
 #### Authentication (if not using Claude Code CLI)
 

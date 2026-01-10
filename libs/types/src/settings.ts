@@ -95,7 +95,14 @@ export function getThinkingTokenBudget(level: ThinkingLevel | undefined): number
 }
 
 /** ModelProvider - AI model provider for credentials and API key management */
-export type ModelProvider = 'claude' | 'cursor' | 'openai' | 'ollama';
+export type ModelProvider =
+  | 'claude'
+  | 'cursor'
+  | 'openai'
+  | 'ollama'
+  | 'gemini'
+  | 'copilot'
+  | 'codex';
 
 /**
  * PhaseModelEntry - Configuration for a single phase model
@@ -484,8 +491,8 @@ export interface GlobalSettings {
   mcpServers: MCPServerConfig[];
 
   // Provider Configuration
-  /** Default AI provider to use (claude, openai, ollama) */
-  defaultProvider?: 'claude' | 'openai' | 'ollama' | string;
+  /** Default AI provider to use (claude, openai, ollama, gemini, copilot, codex) */
+  defaultProvider?: 'claude' | 'openai' | 'ollama' | 'gemini' | 'copilot' | 'codex' | string;
   /** Provider-specific settings */
   providerSettings?: {
     claude?: {
@@ -508,6 +515,28 @@ export interface GlobalSettings {
       /** Base URL for Ollama API (default: http://localhost:11434) */
       baseUrl?: string;
       /** Default model for Ollama */
+      defaultModel?: string;
+    };
+    gemini?: {
+      /** Google API key (also read from GEMINI_API_KEY or GOOGLE_API_KEY env) */
+      apiKey?: string;
+      /** Path to Gemini CLI if installed */
+      cliPath?: string;
+      /** Default model for Gemini */
+      defaultModel?: string;
+    };
+    copilot?: {
+      /** Path to GitHub Copilot CLI if installed */
+      cliPath?: string;
+      /** Default model for Copilot */
+      defaultModel?: string;
+    };
+    codex?: {
+      /** OpenAI API key for Codex (also read from OPENAI_API_KEY env) */
+      apiKey?: string;
+      /** Path to Codex CLI if installed */
+      cliPath?: string;
+      /** Default model for Codex */
       defaultModel?: string;
     };
   };
