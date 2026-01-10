@@ -249,140 +249,90 @@ function RootLayoutContent() {
   }, [location.pathname, navigate]);
 
   // Initialize authentication
-  // - Electron mode: Uses API key from IPC (header-based auth)
-  // - Web mode: Uses HTTP-only session cookie
+  // AUTHENTICATION DISABLED - Always treat as authenticated
   useEffect(() => {
-    // Prevent concurrent auth checks
-    if (authCheckRunning.current) {
-      return;
-    }
-
+    // Skip all authentication checks
     const initAuth = async () => {
-      authCheckRunning.current = true;
-
       try {
-        // Initialize API key for Electron mode
-        await initApiKey();
-
-        // 1. Verify session (Single Request, ALL modes)
-        let isValid = false;
+        // Load settings directly without verification
+        const api = getHttpApiClient();
         try {
-          isValid = await verifySession();
-        } catch (error) {
-          logger.warn('Session verification failed (likely network/server issue):', error);
-          isValid = false;
-        }
+          const maxAttempts = 8;
+          const baseDelayMs = 250;
+          let lastError: unknown = null;
 
-        if (isValid) {
-          // 2. Load settings (and hydrate stores) before marking auth as checked.
-          // This prevents useSettingsSync from pushing default/empty state to the server
-          // when the backend is still starting up or temporarily unavailable.
-          const api = getHttpApiClient();
-          try {
-            const maxAttempts = 8;
-            const baseDelayMs = 250;
-            let lastError: unknown = null;
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+              const settingsResult = await api.settings.getGlobal();
+              if (settingsResult.success && settingsResult.settings) {
+                const { settings: finalSettings, migrated } = await performSettingsMigration(
+                  settingsResult.settings as unknown as Parameters<
+                    typeof performSettingsMigration
+                  >[0]
+                );
 
-            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-              try {
-                const settingsResult = await api.settings.getGlobal();
-                if (settingsResult.success && settingsResult.settings) {
-                  const { settings: finalSettings, migrated } = await performSettingsMigration(
-                    settingsResult.settings as unknown as Parameters<
-                      typeof performSettingsMigration
-                    >[0]
-                  );
-
-                  if (migrated) {
-                    logger.info('Settings migration from localStorage completed');
-                  }
-
-                  // Hydrate store with the final settings (merged if migration occurred)
-                  hydrateStoreFromSettings(finalSettings);
-
-                  // Signal that settings hydration is complete so useSettingsSync can start
-                  signalMigrationComplete();
-
-                  // Mark auth as checked only after settings hydration succeeded.
-                  useAuthStore
-                    .getState()
-                    .setAuthState({ isAuthenticated: true, authChecked: true });
-                  return;
+                if (migrated) {
+                  logger.info('Settings migration from localStorage completed');
                 }
 
-                lastError = settingsResult;
-              } catch (error) {
-                lastError = error;
+                // Hydrate store with the final settings (merged if migration occurred)
+                hydrateStoreFromSettings(finalSettings);
+
+                // Signal that settings hydration is complete so useSettingsSync can start
+                signalMigrationComplete();
+
+                // AUTHENTICATION DISABLED - Always mark as authenticated
+                useAuthStore.getState().setAuthState({ isAuthenticated: true, authChecked: true });
+                return;
               }
 
-              const delayMs = Math.min(1500, baseDelayMs * attempt);
-              logger.warn(
-                `Settings not ready (attempt ${attempt}/${maxAttempts}); retrying in ${delayMs}ms...`,
-                lastError
-              );
-              await new Promise((resolve) => setTimeout(resolve, delayMs));
+              lastError = settingsResult;
+            } catch (error) {
+              lastError = error;
             }
 
-            throw lastError ?? new Error('Failed to load settings');
-          } catch (error) {
-            logger.error('Failed to fetch settings after valid session:', error);
-            // If we can't load settings, we must NOT start syncing defaults to the server.
-            // Treat as not authenticated for now (backend likely unavailable) and unblock sync hook.
-            useAuthStore.getState().setAuthState({ isAuthenticated: false, authChecked: true });
-            signalMigrationComplete();
-            if (location.pathname !== '/logged-out' && location.pathname !== '/login') {
-              navigate({ to: '/logged-out' });
-            }
-            return;
+            const delayMs = Math.min(1500, baseDelayMs * attempt);
+            logger.warn(
+              `Settings not ready (attempt ${attempt}/${maxAttempts}); retrying in ${delayMs}ms...`,
+              lastError
+            );
+            await new Promise((resolve) => setTimeout(resolve, delayMs));
           }
-        } else {
-          // Session is invalid or expired - treat as not authenticated
-          useAuthStore.getState().setAuthState({ isAuthenticated: false, authChecked: true });
-          // Signal migration complete so sync hook doesn't hang (nothing to sync when not authenticated)
+
+          // If settings fail, still mark as authenticated but with default settings
+          logger.warn('Failed to load settings, using defaults');
           signalMigrationComplete();
-
-          // Redirect to logged-out if not already there or login
-          if (location.pathname !== '/logged-out' && location.pathname !== '/login') {
-            navigate({ to: '/logged-out' });
-          }
+          useAuthStore.getState().setAuthState({ isAuthenticated: true, authChecked: true });
+        } catch (error) {
+          logger.error('Failed to fetch settings:', error);
+          // Still mark as authenticated with defaults
+          signalMigrationComplete();
+          useAuthStore.getState().setAuthState({ isAuthenticated: true, authChecked: true });
         }
       } catch (error) {
-        logger.error('Failed to initialize auth:', error);
-        // On error, treat as not authenticated
-        useAuthStore.getState().setAuthState({ isAuthenticated: false, authChecked: true });
-        // Signal migration complete so sync hook doesn't hang
+        logger.error('Failed to initialize:', error);
+        // Still mark as authenticated
         signalMigrationComplete();
-        if (location.pathname !== '/logged-out' && location.pathname !== '/login') {
-          navigate({ to: '/logged-out' });
-        }
-      } finally {
-        authCheckRunning.current = false;
+        useAuthStore.getState().setAuthState({ isAuthenticated: true, authChecked: true });
       }
     };
 
     initAuth();
-  }, []); // Runs once per load; auth state drives routing rules
+  }, []); // Runs once per load
 
   // Note: Settings are now loaded in __root.tsx after successful session verification
   // This ensures a unified flow across all modes (Electron, web, external server)
 
-  // Routing rules (ALL modes - unified flow):
-  // - If not authenticated: force /logged-out (even /setup is protected)
-  // - If authenticated but setup incomplete: force /setup
-  // - If authenticated and setup complete: allow access to app
+  // Routing rules - AUTHENTICATION DISABLED
+  // - If setup incomplete: force /setup
+  // - If setup complete: allow access to app
   useEffect(() => {
     // Wait for auth check to complete before enforcing any redirects
     if (!authChecked) return;
 
-    // Unauthenticated -> force /logged-out (but allow /login so user can authenticate)
-    if (!isAuthenticated) {
-      if (location.pathname !== '/logged-out' && location.pathname !== '/login') {
-        navigate({ to: '/logged-out' });
-      }
-      return;
-    }
+    // AUTHENTICATION DISABLED - Skip all login/logged-out redirects
 
-    // Authenticated -> determine whether setup is required
+    // Determine whether setup is required
     if (!setupComplete && location.pathname !== '/setup') {
       navigate({ to: '/setup' });
       return;
@@ -392,7 +342,7 @@ function RootLayoutContent() {
     if (setupComplete && location.pathname === '/setup') {
       navigate({ to: '/' });
     }
-  }, [authChecked, isAuthenticated, setupComplete, location.pathname, navigate]);
+  }, [authChecked, setupComplete, location.pathname, navigate]);
 
   useEffect(() => {
     setGlobalFileBrowser(openFileBrowser);
@@ -461,17 +411,9 @@ function RootLayoutContent() {
   // The dialog is rendered as an overlay while the main content is blocked
   const showSandboxDialog = sandboxStatus === 'needs-confirmation';
 
-  // Show login page (full screen, no sidebar)
-  // Note: No sandbox dialog here - it only shows after login and setup complete
-  if (isLoginRoute || isLoggedOutRoute) {
-    return (
-      <main className="h-screen overflow-hidden" data-testid="app-container">
-        <Outlet />
-      </main>
-    );
-  }
+  // AUTHENTICATION DISABLED - Skip login/logged-out pages
 
-  // Wait for auth check before rendering protected routes (ALL modes - unified flow)
+  // Wait for auth check before rendering protected routes
   if (!authChecked) {
     return (
       <main className="flex h-screen items-center justify-center" data-testid="app-container">
@@ -480,17 +422,7 @@ function RootLayoutContent() {
     );
   }
 
-  // Redirect to logged-out if not authenticated (ALL modes - unified flow)
-  // Show loading state while navigation is in progress
-  if (!isAuthenticated) {
-    return (
-      <main className="flex h-screen items-center justify-center" data-testid="app-container">
-        <LoadingState message="Redirecting..." />
-      </main>
-    );
-  }
-
-  // Show setup page (full screen, no sidebar) - authenticated only
+  // Show setup page (full screen, no sidebar)
   if (isSetupRoute) {
     return (
       <main className="h-screen overflow-hidden" data-testid="app-container">

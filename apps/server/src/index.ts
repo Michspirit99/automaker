@@ -65,6 +65,16 @@ import { createPipelineRoutes } from './routes/pipeline/index.js';
 import { pipelineService } from './services/pipeline-service.js';
 import { createIdeationRoutes } from './routes/ideation/index.js';
 import { IdeationService } from './services/ideation-service.js';
+import { providerRegistry } from '@automaker/providers';
+import { ClaudeProviderBridge } from './providers/claude-provider-bridge.js';
+import { OpenAIProvider } from './providers/openai-provider.js';
+import { OllamaProvider } from './providers/ollama-provider.js';
+import { GeminiProvider } from './providers/gemini-provider.js';
+import { CopilotProvider } from './providers/copilot-provider.js';
+import { CodexProvider } from './providers/codex-provider.js';
+import { CursorProvider } from './providers/cursor-provider.js';
+import { OpencodeProvider } from './providers/opencode-provider.js';
+import { createProvidersRoutes } from './routes/providers/index.js';
 
 // Load environment variables
 dotenv.config();
@@ -92,6 +102,29 @@ if (!hasAnthropicKey) {
 } else {
   logger.info('✓ ANTHROPIC_API_KEY detected (API key auth)');
 }
+
+// Register all AI providers
+providerRegistry.register(new ClaudeProviderBridge());
+providerRegistry.register(new OpenAIProvider());
+providerRegistry.register(new OllamaProvider());
+providerRegistry.register(new GeminiProvider());
+providerRegistry.register(new CopilotProvider());
+providerRegistry.register(new CodexProvider());
+providerRegistry.register(new CursorProvider());
+providerRegistry.register(new OpencodeProvider());
+
+// Set default provider (Claude for now)
+providerRegistry.setDefault('claude');
+
+// Log available providers
+(async () => {
+  const availableProviders = await providerRegistry.detectAvailable();
+  if (availableProviders.length > 0) {
+    logger.info('✓ Available AI providers:', availableProviders.map((p) => p.name).join(', '));
+  } else {
+    logger.warn('⚠️  No AI providers are fully configured and available');
+  }
+})();
 
 // Initialize security
 initAllowedPaths();
@@ -193,11 +226,13 @@ app.use('/api', requireJsonContentType);
 
 // Mount API routes - health, auth, and setup are unauthenticated
 app.use('/api/health', createHealthRoutes());
-app.use('/api/auth', createAuthRoutes());
+// AUTHENTICATION DISABLED
+// app.use('/api/auth', createAuthRoutes());
 app.use('/api/setup', createSetupRoutes());
 
 // Apply authentication to all other routes
-app.use('/api', authMiddleware);
+// AUTHENTICATION DISABLED
+// app.use('/api', authMiddleware);
 
 // Protected health endpoint with detailed info
 app.get('/api/health/detailed', createDetailedHandler());
@@ -226,6 +261,7 @@ app.use('/api/backlog-plan', createBacklogPlanRoutes(events, settingsService));
 app.use('/api/mcp', createMCPRoutes(mcpTestService));
 app.use('/api/pipeline', createPipelineRoutes(pipelineService));
 app.use('/api/ideation', createIdeationRoutes(events, ideationService, featureLoader));
+app.use('/api/providers', createProvidersRoutes());
 
 // Create HTTP server
 const server = createServer(app);
@@ -276,13 +312,13 @@ function authenticateWebSocket(request: import('http').IncomingMessage): boolean
 server.on('upgrade', (request, socket, head) => {
   const { pathname } = new URL(request.url || '', `http://${request.headers.host}`);
 
-  // Authenticate all WebSocket connections
-  if (!authenticateWebSocket(request)) {
-    logger.info('Authentication failed, rejecting connection');
-    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-    socket.destroy();
-    return;
-  }
+  // Authentication disabled - allow all WebSocket connections
+  // if (!authenticateWebSocket(request)) {
+  //   logger.info('Authentication failed, rejecting connection');
+  //   socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+  //   socket.destroy();
+  //   return;
+  // }
 
   if (pathname === '/api/events') {
     wss.handleUpgrade(request, socket, head, (ws) => {

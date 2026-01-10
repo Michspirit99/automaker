@@ -343,6 +343,47 @@ npm run lint
 
 ### Environment Configuration
 
+#### AI Providers
+
+Automaker supports multiple AI providers. Configure your preferred provider through environment variables:
+
+**Claude (Anthropic)** - Default provider
+
+- `ANTHROPIC_API_KEY` - Your Anthropic API key (not needed if using Claude Code CLI)
+
+**OpenAI**
+
+- `OPENAI_API_KEY` - Your OpenAI API key
+- Supports GPT-4 Turbo, GPT-4, and GPT-3.5 Turbo models
+
+**Ollama (Local Models)**
+
+- `OLLAMA_BASE_URL` - Ollama API endpoint (default: http://localhost:11434)
+- Run models locally without API keys (Llama 2, Code Llama, Mistral, etc.)
+
+**Google Gemini**
+
+- `GEMINI_API_KEY` or `GOOGLE_API_KEY` - Your Google API key (optional)
+- Requires Gemini CLI installed
+- Supports OAuth authentication via `gemini auth login` (alternative to API key)
+- Supports Gemini Pro, Gemini Pro Vision, and Gemini Ultra models
+
+**GitHub Copilot**
+
+- Requires GitHub Copilot CLI installed and authenticated via `gh auth login`
+- Uses your GitHub Copilot subscription
+
+**OpenAI Codex**
+
+- `OPENAI_API_KEY` - Your OpenAI API key (optional)
+- Requires Codex CLI installed
+- Supports OAuth authentication via `codex auth login` (alternative to API key)
+- Supports code-davinci-002 and code-cushman-001 models
+
+**Default Provider**
+
+- `DEFAULT_AI_PROVIDER` - Set default provider: `claude`, `openai`, `ollama`, `gemini`, `copilot`, or `codex` (default: claude)
+
 #### Authentication (if not using Claude Code CLI)
 
 - `ANTHROPIC_API_KEY` - Your Anthropic API key for Claude Agent SDK (not needed if using Claude Code CLI)

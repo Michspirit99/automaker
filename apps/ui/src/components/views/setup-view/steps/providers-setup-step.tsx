@@ -31,7 +31,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { AnthropicIcon, CursorIcon, OpenAIIcon, OpenCodeIcon } from '@/components/ui/provider-icon';
+import {
+  AnthropicIcon,
+  CursorIcon,
+  OpenAIIcon,
+  OpenCodeIcon,
+  GeminiIcon,
+} from '@/components/ui/provider-icon';
 import { TerminalOutput } from '../components';
 import { useCliInstallation, useTokenSave } from '../hooks';
 
@@ -40,7 +46,7 @@ interface ProvidersSetupStepProps {
   onBack: () => void;
 }
 
-type ProviderTab = 'claude' | 'cursor' | 'codex' | 'opencode';
+type ProviderTab = 'claude' | 'cursor' | 'codex' | 'opencode' | 'gemini' | 'copilot';
 
 // ============================================================================
 // Claude Content
@@ -1214,6 +1220,302 @@ function OpencodeContent() {
 }
 
 // ============================================================================
+// Gemini Content
+// ============================================================================
+function GeminiContent() {
+  const { setApiKeys, apiKeys } = useAppStore();
+  const [apiKey, setApiKey] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeletingApiKey, setIsDeletingApiKey] = useState(false);
+
+  const { isSaving: isSavingApiKey, saveToken: saveApiKeyToken } = useTokenSave({
+    provider: 'google',
+    onSuccess: () => {
+      setApiKeys({ ...apiKeys, google: apiKey });
+      toast.success('API key saved successfully!');
+    },
+  });
+
+  const deleteApiKey = useCallback(async () => {
+    setIsDeletingApiKey(true);
+    try {
+      const api = getElectronAPI();
+      if (!api.setup?.deleteApiKey) {
+        toast.error('Delete API not available');
+        return;
+      }
+      const result = await api.setup.deleteApiKey('google');
+      if (result.success) {
+        setApiKey('');
+        setApiKeys({ ...apiKeys, google: '' });
+        toast.success('API key deleted successfully');
+      }
+    } catch {
+      toast.error('Failed to delete API key');
+    } finally {
+      setIsDeletingApiKey(false);
+    }
+  }, [apiKeys, setApiKeys]);
+
+  const handleSaveApiKey = async () => {
+    if (!apiKey.trim()) {
+      toast.error('Please enter an API key');
+      return;
+    }
+    await saveApiKeyToken(apiKey);
+  };
+
+  const copyCommand = (command: string) => {
+    navigator.clipboard.writeText(command);
+    toast.success('Command copied to clipboard');
+  };
+
+  const hasApiKey = !!apiKeys.google;
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <GeminiIcon className="w-5 h-5" />
+            Google Gemini Setup
+          </CardTitle>
+        </div>
+        <CardDescription>
+          Configure Google Gemini API key or use Gemini CLI authentication
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {hasApiKey && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+              <p className="font-medium text-foreground">API Key Configured</p>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={deleteApiKey}
+              disabled={isDeletingApiKey}
+              className="w-full"
+            >
+              {isDeletingApiKey ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete API Key
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {!hasApiKey && (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="gemini-api-key">API Key</Label>
+              <Input
+                id="gemini-api-key"
+                type="password"
+                placeholder="Enter your Gemini API key"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+              <Button
+                onClick={handleSaveApiKey}
+                disabled={isSavingApiKey || !apiKey.trim()}
+                className="w-full bg-brand-500 hover:bg-brand-600 text-white"
+              >
+                {isSavingApiKey ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Key className="w-4 h-4 mr-2" />
+                    Save API Key
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-muted-foreground">
+                Get your API key from{' '}
+                <a
+                  href="https://makersuite.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-500 hover:underline inline-flex items-center gap-1"
+                >
+                  Google AI Studio
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </p>
+            </div>
+
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="cli-auth" className="border-border">
+                <AccordionTrigger className="text-sm">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4" />
+                    Advanced: CLI Authentication
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Alternatively, install Gemini CLI and authenticate:
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                        npm install -g @google-ai/gemini-cli
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => copyCommand('npm install -g @google-ai/gemini-cli')}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                        gemini auth login
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => copyCommand('gemini auth login')}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================================================
+// Copilot Content
+// ============================================================================
+function CopilotContent() {
+  const [isChecking, setIsChecking] = useState(false);
+
+  const checkStatus = useCallback(async () => {
+    setIsChecking(true);
+    try {
+      // Placeholder for future status check implementation
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    } finally {
+      setIsChecking(false);
+    }
+  }, []);
+
+  const copyCommand = (command: string) => {
+    navigator.clipboard.writeText(command);
+    toast.success('Command copied to clipboard');
+  };
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <OpenAIIcon className="w-5 h-5" />
+            GitHub Copilot Setup
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={checkStatus} disabled={isChecking}>
+            <RefreshCw className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+        <CardDescription>Configure GitHub Copilot CLI for AI assistance</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-4">
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-muted/30 border border-border">
+            <AlertCircle className="w-5 h-5 text-muted-foreground shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium text-foreground">GitHub Copilot CLI Required</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Install GitHub Copilot CLI and authenticate with your GitHub account.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+            <p className="text-sm font-medium text-foreground">Installation Steps:</p>
+            <div className="space-y-2">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">1. Install GitHub CLI:</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                    winget install GitHub.cli
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => copyCommand('winget install GitHub.cli')}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">2. Install Copilot extension:</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                    gh extension install github/gh-copilot
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => copyCommand('gh extension install github/gh-copilot')}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">3. Authenticate:</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono text-foreground">
+                    gh auth login
+                  </code>
+                  <Button variant="ghost" size="icon" onClick={() => copyCommand('gh auth login')}>
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Note: Requires active GitHub Copilot subscription.{' '}
+              <a
+                href="https://github.com/features/copilot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-brand-500 hover:underline inline-flex items-center gap-1"
+              >
+                Learn more
+                <ExternalLink className="w-3 h-3" />
+              </a>
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ============================================================================
 // Main Component
 // ============================================================================
 export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) {
@@ -1358,11 +1660,18 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
   const isOpencodeInstalled = opencodeCliStatus?.installed === true;
   const isOpencodeAuthenticated = opencodeCliStatus?.auth?.authenticated === true;
 
+  // Gemini and Copilot status (basic checks for API keys)
+  const { apiKeys } = useAppStore();
+  const isGeminiConfigured = !!apiKeys.google;
+  const isCopilotConfigured = false; // Placeholder - would check gh CLI status
+
   const hasAtLeastOneProvider =
     isClaudeAuthenticated ||
     isCursorAuthenticated ||
     isCodexAuthenticated ||
-    isOpencodeAuthenticated;
+    isOpencodeAuthenticated ||
+    isGeminiConfigured ||
+    isCopilotConfigured;
 
   type ProviderStatus = 'not_installed' | 'installed_not_auth' | 'authenticated' | 'verifying';
 
@@ -1406,6 +1715,20 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       status: getProviderStatus(isOpencodeInstalled, isOpencodeAuthenticated),
       color: 'text-green-500',
     },
+    {
+      id: 'gemini' as const,
+      label: 'Gemini',
+      icon: GeminiIcon,
+      status: isGeminiConfigured ? 'authenticated' : 'not_installed',
+      color: 'text-purple-500',
+    },
+    {
+      id: 'copilot' as const,
+      label: 'Copilot',
+      icon: OpenAIIcon, // Using OpenAI icon for now as they share similar models
+      status: isCopilotConfigured ? 'authenticated' : 'not_installed',
+      color: 'text-indigo-500',
+    },
   ];
 
   const renderStatusIcon = (status: ProviderStatus) => {
@@ -1442,7 +1765,7 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
       )}
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ProviderTab)}>
-        <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-6 h-auto p-1">
           {providers.map((provider) => {
             const Icon = provider.icon;
             return (
@@ -1487,6 +1810,12 @@ export function ProvidersSetupStep({ onNext, onBack }: ProvidersSetupStepProps) 
           </TabsContent>
           <TabsContent value="opencode" className="mt-0">
             <OpencodeContent />
+          </TabsContent>
+          <TabsContent value="gemini" className="mt-0">
+            <GeminiContent />
+          </TabsContent>
+          <TabsContent value="copilot" className="mt-0">
+            <CopilotContent />
           </TabsContent>
         </div>
       </Tabs>

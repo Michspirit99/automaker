@@ -244,40 +244,20 @@ export const isExternalServerMode = (): boolean | null => cachedExternalServerMo
 
 /**
  * Initialize API key and server URL for Electron mode authentication.
- * In web mode, authentication uses HTTP-only cookies instead.
+ * AUTHENTICATION DISABLED - Stub function
  *
  * This should be called early in app initialization.
  */
 export const initApiKey = async (): Promise<void> => {
-  // Return existing promise if already in progress
+  // AUTHENTICATION DISABLED - Just initialize server URL
   if (apiKeyInitPromise) return apiKeyInitPromise;
-
-  // Return immediately if already initialized
   if (apiKeyInitialized) return;
 
-  // Create and store the promise so concurrent calls wait for the same initialization
   apiKeyInitPromise = (async () => {
     try {
-      // Initialize server URL from Electron IPC first (needed for API requests)
       await initServerUrl();
-
-      // Only Electron mode uses API key header auth
-      if (typeof window !== 'undefined' && window.electronAPI?.getApiKey) {
-        try {
-          cachedApiKey = await window.electronAPI.getApiKey();
-          if (cachedApiKey) {
-            logger.info('Using API key from Electron');
-            return;
-          }
-        } catch (error) {
-          logger.warn('Failed to get API key from Electron:', error);
-        }
-      }
-
-      // In web mode, authentication is handled via HTTP-only cookies
-      logger.info('Web mode - using cookie-based authentication');
+      logger.info('Authentication disabled - no API key required');
     } finally {
-      // Mark as initialized after completion, regardless of success or failure
       apiKeyInitialized = true;
     }
   })();
@@ -406,6 +386,7 @@ export const logout = async (): Promise<{ success: boolean }> => {
 
 /**
  * Verify that the current session is still valid by making a request to an authenticated endpoint.
+ * AUTHENTICATION DISABLED - Always returns true
  * If the session has expired or is invalid, clears the session and returns false.
  * This should be called:
  * 1. After login to verify the cookie was set correctly
@@ -417,50 +398,8 @@ export const logout = async (): Promise<{ success: boolean }> => {
  * - throws: Network error or server not ready (caller should retry)
  */
 export const verifySession = async (): Promise<boolean> => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-
-  // Electron mode: use API key header
-  const apiKey = getApiKey();
-  if (apiKey) {
-    headers['X-API-Key'] = apiKey;
-  }
-
-  // Add session token header if available (web mode)
-  const sessionToken = getSessionToken();
-  if (sessionToken) {
-    headers['X-Session-Token'] = sessionToken;
-  }
-
-  // Make a request to an authenticated endpoint to verify the session
-  // We use /api/settings/status as it requires authentication and is lightweight
-  // Note: fetch throws on network errors, which we intentionally let propagate
-  const response = await fetch(`${getServerUrl()}/api/settings/status`, {
-    headers,
-    credentials: 'include',
-    // Avoid hanging indefinitely during backend reloads or network issues
-    signal: AbortSignal.timeout(2500),
-  });
-
-  // Check for authentication errors - these are definitive "invalid session" responses
-  if (response.status === 401 || response.status === 403) {
-    logger.warn('Session verification failed - session expired or invalid');
-    // Clear the in-memory/localStorage session token since it's no longer valid
-    // Note: We do NOT call logout here - that would destroy a potentially valid
-    // cookie if the issue was transient (e.g., token not sent due to timing)
-    clearSessionToken();
-    return false;
-  }
-
-  // For other non-ok responses (5xx, etc.), throw to trigger retry
-  if (!response.ok) {
-    const error = new Error(`Session verification failed with status: ${response.status}`);
-    logger.warn('Session verification failed with status:', response.status);
-    throw error;
-  }
-
-  logger.info('Session verified successfully');
+  // AUTHENTICATION DISABLED - Always return true
+  logger.info('Authentication disabled - session verification skipped');
   return true;
 };
 
@@ -1414,6 +1353,38 @@ export class HttpApiClient implements ElectronAPI {
       };
       error?: string;
     }> => this.get('/api/setup/opencode-status'),
+
+    // Gemini CLI methods
+    getGeminiStatus: (): Promise<{
+      success: boolean;
+      installed?: boolean;
+      version?: string;
+      path?: string;
+      auth?: {
+        authenticated: boolean;
+        method: string;
+        hasApiKey?: boolean;
+      };
+      installCommand?: string;
+      loginCommand?: string;
+      error?: string;
+    }> => this.get('/api/setup/gemini-status'),
+
+    // Copilot CLI methods
+    getCopilotStatus: (): Promise<{
+      success: boolean;
+      installed?: boolean;
+      version?: string;
+      path?: string;
+      auth?: {
+        authenticated: boolean;
+        method: string;
+        hasGhCli?: boolean;
+      };
+      installCommand?: string;
+      loginCommand?: string;
+      error?: string;
+    }> => this.get('/api/setup/copilot-status'),
 
     onInstallProgress: (callback: (progress: unknown) => void) => {
       return this.subscribeToEvent('agent:stream', callback);

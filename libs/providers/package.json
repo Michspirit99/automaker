@@ -1,0 +1,30 @@
+{
+  "name": "@automaker/providers",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Provider abstraction layer for AI model providers",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "automaker",
+    "providers",
+    "ai"
+  ],
+  "author": "AutoMaker Team",
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=22.0.0 <23.0.0"
+  },
+  "dependencies": {
+    "@automaker/types": "1.0.0",
+    "@automaker/utils": "1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.3",
+    "typescript": "5.9.3"
+  }
+}

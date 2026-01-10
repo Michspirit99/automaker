@@ -99,7 +99,15 @@ export function getThinkingTokenBudget(level: ThinkingLevel | undefined): number
 }
 
 /** ModelProvider - AI model provider for credentials and API key management */
-export type ModelProvider = 'claude' | 'cursor' | 'codex' | 'opencode';
+export type ModelProvider =
+  | 'claude'
+  | 'cursor'
+  | 'codex'
+  | 'opencode'
+  | 'openai'
+  | 'ollama'
+  | 'gemini'
+  | 'copilot';
 
 const DEFAULT_CODEX_AUTO_LOAD_AGENTS = false;
 const DEFAULT_CODEX_SANDBOX_MODE: CodexSandboxMode = 'workspace-write';
@@ -564,6 +572,57 @@ export interface GlobalSettings {
   // MCP Server Configuration
   /** List of configured MCP servers for agent use */
   mcpServers: MCPServerConfig[];
+
+  // Provider Configuration
+  /** Default AI provider to use (claude, openai, ollama, gemini, copilot, codex) */
+  defaultProvider?: 'claude' | 'openai' | 'ollama' | 'gemini' | 'copilot' | 'codex' | string;
+  /** Provider-specific settings */
+  providerSettings?: {
+    claude?: {
+      /** Anthropic API key (also read from ANTHROPIC_API_KEY env) */
+      apiKey?: string;
+      /** Path to Claude CLI if installed */
+      cliPath?: string;
+      /** Default model for Claude */
+      defaultModel?: string;
+    };
+    openai?: {
+      /** OpenAI API key (also read from OPENAI_API_KEY env) */
+      apiKey?: string;
+      /** OpenAI organization ID (optional) */
+      organization?: string;
+      /** Default model for OpenAI */
+      defaultModel?: string;
+    };
+    ollama?: {
+      /** Base URL for Ollama API (default: http://localhost:11434) */
+      baseUrl?: string;
+      /** Default model for Ollama */
+      defaultModel?: string;
+    };
+    gemini?: {
+      /** Google API key (also read from GEMINI_API_KEY or GOOGLE_API_KEY env) */
+      apiKey?: string;
+      /** Path to Gemini CLI if installed */
+      cliPath?: string;
+      /** Default model for Gemini */
+      defaultModel?: string;
+    };
+    copilot?: {
+      /** Path to GitHub Copilot CLI if installed */
+      cliPath?: string;
+      /** Default model for Copilot */
+      defaultModel?: string;
+    };
+    codex?: {
+      /** OpenAI API key for Codex (also read from OPENAI_API_KEY env) */
+      apiKey?: string;
+      /** Path to Codex CLI if installed */
+      cliPath?: string;
+      /** Default model for Codex */
+      defaultModel?: string;
+    };
+  };
 
   // Prompt Customization
   /** Custom prompts for Auto Mode, Agent Runner, Backlog Planning, and Enhancements */
