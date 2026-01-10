@@ -12,6 +12,7 @@ import type {
   ExecuteResult,
   InstallationStatus,
   AuthenticationStatus,
+  AuthResult,
 } from '@automaker/providers';
 
 export class GeminiProvider implements AIProvider {
@@ -82,23 +83,76 @@ export class GeminiProvider implements AIProvider {
     const cliPath = await this.getCLIPath();
     const hasApiKey = !!process.env.GEMINI_API_KEY || !!process.env.GOOGLE_API_KEY;
 
+    // Check if authenticated via OAuth
+    let authenticated = hasApiKey;
+    if (cliPath && !hasApiKey) {
+      try {
+        // Check if gemini CLI has OAuth authentication configured
+        const authProc = spawn('gemini', ['auth', 'status']);
+        authenticated = await new Promise<boolean>((resolve) => {
+          authProc.on('close', (code) => resolve(code === 0));
+          authProc.on('error', () => resolve(false));
+        });
+      } catch {
+        authenticated = false;
+      }
+    }
+
     return {
       installed: cliPath !== null,
       method: 'cli',
       path: cliPath || undefined,
       hasApiKey,
-      authenticated: cliPath !== null && hasApiKey,
+      authenticated: cliPath !== null && authenticated,
     };
   }
 
   async checkAuthentication(): Promise<AuthenticationStatus> {
     const hasApiKey = !!process.env.GEMINI_API_KEY || !!process.env.GOOGLE_API_KEY;
-    const cliPath = await this.getCLIPath();
+    const status = await this.detectInstallation();
 
     return {
-      authenticated: cliPath !== null && hasApiKey,
-      method: hasApiKey ? 'api_key' : 'cli',
+      authenticated: status.authenticated,
+      method: hasApiKey ? 'api_key' : 'oauth',
     };
+  }
+
+  async authenticateCLI(): Promise<AuthResult> {
+    const cliPath = await this.getCLIPath();
+
+    if (!cliPath) {
+      return {
+        success: false,
+        error: 'Gemini CLI not found. Please install the Gemini CLI first.',
+      };
+    }
+
+    return new Promise((resolve) => {
+      const proc = spawn('gemini', ['auth', 'login'], {
+        stdio: 'inherit', // Allow interactive authentication
+      });
+
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve({
+            success: true,
+            method: 'oauth',
+          });
+        } else {
+          resolve({
+            success: false,
+            error: `Authentication failed with exit code ${code}`,
+          });
+        }
+      });
+
+      proc.on('error', (error) => {
+        resolve({
+          success: false,
+          error: `Failed to start authentication: ${error.message}`,
+        });
+      });
+    });
   }
 
   async getCLIPath(): Promise<string | null> {

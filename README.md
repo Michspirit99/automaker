@@ -363,8 +363,9 @@ Automaker supports multiple AI providers. Configure your preferred provider thro
 
 **Google Gemini**
 
-- `GEMINI_API_KEY` or `GOOGLE_API_KEY` - Your Google API key
+- `GEMINI_API_KEY` or `GOOGLE_API_KEY` - Your Google API key (optional)
 - Requires Gemini CLI installed
+- Supports OAuth authentication via `gemini auth login` (alternative to API key)
 - Supports Gemini Pro, Gemini Pro Vision, and Gemini Ultra models
 
 **GitHub Copilot**
@@ -374,8 +375,9 @@ Automaker supports multiple AI providers. Configure your preferred provider thro
 
 **OpenAI Codex**
 
-- `OPENAI_API_KEY` - Your OpenAI API key
+- `OPENAI_API_KEY` - Your OpenAI API key (optional)
 - Requires Codex CLI installed
+- Supports OAuth authentication via `codex auth login` (alternative to API key)
 - Supports code-davinci-002 and code-cushman-001 models
 
 **Default Provider**
