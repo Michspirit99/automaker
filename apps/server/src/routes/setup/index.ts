@@ -24,6 +24,8 @@ import { createDeauthCursorHandler } from './routes/deauth-cursor.js';
 import { createAuthOpencodeHandler } from './routes/auth-opencode.js';
 import { createDeauthOpencodeHandler } from './routes/deauth-opencode.js';
 import { createOpencodeStatusHandler } from './routes/opencode-status.js';
+import { createGeminiStatusHandler } from './routes/gemini-status.js';
+import { createCopilotStatusHandler } from './routes/copilot-status.js';
 import {
   createGetCursorConfigHandler,
   createSetCursorDefaultModelHandler,
@@ -65,6 +67,13 @@ export function createSetupRoutes(): Router {
   router.get('/opencode-status', createOpencodeStatusHandler());
   router.post('/auth-opencode', createAuthOpencodeHandler());
   router.post('/deauth-opencode', createDeauthOpencodeHandler());
+
+  // Gemini CLI routes
+  router.get('/gemini-status', createGeminiStatusHandler());
+
+  // Copilot CLI routes
+  router.get('/copilot-status', createCopilotStatusHandler());
+
   router.get('/cursor-config', createGetCursorConfigHandler());
   router.post('/cursor-config/default-model', createSetCursorDefaultModelHandler());
   router.post('/cursor-config/models', createSetCursorModelsHandler());

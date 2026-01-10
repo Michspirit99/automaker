@@ -1,6 +1,6 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { LoggedOutView } from '@/components/views/logged-out-view';
+import { createFileRoute, Navigate } from '@tanstack/react-router';
 
+// AUTHENTICATION DISABLED - Redirect to home
 export const Route = createFileRoute('/logged-out')({
-  component: LoggedOutView,
+  component: () => <Navigate to="/" />,
 });

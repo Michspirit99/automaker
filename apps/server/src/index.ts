@@ -72,6 +72,8 @@ import { OllamaProvider } from './providers/ollama-provider.js';
 import { GeminiProvider } from './providers/gemini-provider.js';
 import { CopilotProvider } from './providers/copilot-provider.js';
 import { CodexProvider } from './providers/codex-provider.js';
+import { CursorProvider } from './providers/cursor-provider.js';
+import { OpencodeProvider } from './providers/opencode-provider.js';
 import { createProvidersRoutes } from './routes/providers/index.js';
 
 // Load environment variables
@@ -108,6 +110,8 @@ providerRegistry.register(new OllamaProvider());
 providerRegistry.register(new GeminiProvider());
 providerRegistry.register(new CopilotProvider());
 providerRegistry.register(new CodexProvider());
+providerRegistry.register(new CursorProvider());
+providerRegistry.register(new OpencodeProvider());
 
 // Set default provider (Claude for now)
 providerRegistry.setDefault('claude');
@@ -222,11 +226,13 @@ app.use('/api', requireJsonContentType);
 
 // Mount API routes - health, auth, and setup are unauthenticated
 app.use('/api/health', createHealthRoutes());
-app.use('/api/auth', createAuthRoutes());
+// AUTHENTICATION DISABLED
+// app.use('/api/auth', createAuthRoutes());
 app.use('/api/setup', createSetupRoutes());
 
 // Apply authentication to all other routes
-app.use('/api', authMiddleware);
+// AUTHENTICATION DISABLED
+// app.use('/api', authMiddleware);
 
 // Protected health endpoint with detailed info
 app.get('/api/health/detailed', createDetailedHandler());
@@ -306,13 +312,13 @@ function authenticateWebSocket(request: import('http').IncomingMessage): boolean
 server.on('upgrade', (request, socket, head) => {
   const { pathname } = new URL(request.url || '', `http://${request.headers.host}`);
 
-  // Authenticate all WebSocket connections
-  if (!authenticateWebSocket(request)) {
-    logger.info('Authentication failed, rejecting connection');
-    socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
-    socket.destroy();
-    return;
-  }
+  // Authentication disabled - allow all WebSocket connections
+  // if (!authenticateWebSocket(request)) {
+  //   logger.info('Authentication failed, rejecting connection');
+  //   socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+  //   socket.destroy();
+  //   return;
+  // }
 
   if (pathname === '/api/events') {
     wss.handleUpgrade(request, socket, head, (ws) => {
